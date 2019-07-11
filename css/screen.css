@@ -42,10 +42,10 @@ body {
 -------------------------------------------------------------------------------*/
 
 #main_menu {
-    width: 800px;
+    width: 460px;
     position: absolute;
     padding: 0px;
-    margin: -42px 0px 0px -31px;
+    margin: -42px 0px 0px 309px;
     font-family: Verdana,sans-serif;
     font-size: 11t;
     text-align: right;
