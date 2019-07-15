@@ -2,7 +2,7 @@
         "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title> &quot;Vybornov's Blog&quot; - Как начать работать с bhyve</title>
+<title>Vybornov's Blog | Как начать работать с bhyve</title>
 
 <!-- Web-design (C) 1998-2013 Mike Melnikov | cherry-design@mail.ru -->
 <!-- Web-design (C) 1998-2013 Cherry-Design | http://www.cherry-design.spb.ru/ -->
@@ -33,6 +33,7 @@
 <div id="main_menu">
 <ul>
 <li><a href="index.htm">Список постов</a></li>
+<li><a href="about.htm">О проекте</a></li>
 <li><a href="resume.htm">Резюме</a></li>
 </ul>
 </div>
@@ -49,14 +50,40 @@
 <!-- Основное содержание / начало -->
 <div id="content">
 <h1>Как начать работать с bhyve</h1>
-<address>Последнее изменение: 12/07/2019 11:39:49</address>
+<address>Последнее изменение: 15/07/2019 17:21:45</address>
 <h2>Почему bhyve?</h2>
 
 <ol>
+<li>Бесплатно</li>
 <li>Доступен из коробки во FreeBSD</li>
+<li>Не надо разбираться с гуями</li>
 <li>С обёрткой из скриптов vm-bhyve с ним приятно работать</li>
-<li>В связке с ZFS можно создавать снимки и работать с ними через команды пакета vm-bhyve</li>
+<li>Гостями можно и *BSD, и GNU/Linux, и Windows, и даже больше</li>
 </ol>
+
+<h2>Аппаратное обеспечение</h2>
+
+<p>Для работы bhyve требуется наличие CPU Intel, поддерживающих механизм виртуализации VT-x и работу со вложенными страницами памяти (EPT &mdash; Extended Page Tables). Опционально для проброса PCI-устройств в госетвые окружения может быть задействована технология VT-d (Direct Device Attach). Проверить наличие VT-x можно просмотрев  флаги в секции "Features" в выводе dmesg, в списке должен присутствовать флаг VMX.</p>
+
+<p>Я буду использовать сервер HP ProLiant DL360p Gen8 с одним четырехъядерным процессором Intel Xeon E5-2609, восемью гигабайтами оперативной памяти и с двумя жесткими дисками в зеркале.</p>
+
+<h2>Куда жать?</h2>
+
+<p>Сперва установим операционную систему FreeBSD 12.0, настроим сеть, скачаем и распакуем последние обновления (этот процесс я описывать не буду), затем приступим к настройке bhyve и установке прикладного ПО.</p>
+
+<p>Работу гипервизора обеспечивает загружаемый модуль ядра vmm.ko, библиотека libvmmapi и утилиты bhyve, bhyveload и bhyvectl. Дополнительно мы установим пакет vm-bhyve для управления гипервизором.</p>
+
+<pre> # pkg update
+ # pkg install vm-bhyve</pre>
+
+<h2>Ссылки</h2>
+
+<ul>
+<li><a href="https://wiki.freebsd.org/bhyve">bhyve Frequently Asked Questions</a></li>
+<li><a href="https://opennet.ru/tips/info/2643.shtml">Тестирование во FreeBSD системы виртуализации bhyve</a></li>
+<li><a href="https://www.freebsd.org/doc/handbook/virtualization-host-bhyve.html">FreeBSD Handbook Chapter 21. Virtualization</a></li>
+<li><a href="https://github.com/churchers/vm-bhyve">Shell based, minimal dependency bhyve manager</a></li>
+</ul>
 
 
 </div>
