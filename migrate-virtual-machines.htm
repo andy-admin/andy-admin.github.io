@@ -1,0 +1,119 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>Vybornov's Blog | Перенос виртуалок</title>
+
+<!-- Web-design (C) 1998-2013 Mike Melnikov | cherry-design@mail.ru -->
+<!-- Web-design (C) 1998-2013 Cherry-Design | http://www.cherry-design.spb.ru/ -->
+
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<meta http-equiv="сontent-language" content="ru" />
+
+<meta name="generator" content="Wikipad v2.0.1" />
+<meta name="keywords" content="Список ключевых слов" />
+<meta name="description" content="Краткое описание сайта" />
+
+<link rel="stylesheet" type="text/css" media="screen" href="css/screen.css" />
+<link rel="stylesheet" type="text/css" media="print" href="css/print.css" />
+
+
+</head>
+
+<body>
+
+<!-- Заголовок сайта / начало -->
+<div id="header">
+<h1><a href="/index.htm" style="text-decoration:none;color:black;">Vybornov's Blog</a></h1>
+<p></p>
+</div>
+<!-- Заголовок сайта / конец -->
+
+<!-- Основное меню / начало -->
+<div id="main_menu">
+<ul>
+<li><a href="index.htm">Список постов</a></li>
+<li><a href="about.htm">О проекте</a></li>
+<li><a href="resume.htm">Резюме</a></li>
+</ul>
+</div>
+<!-- Основное меню / конец -->
+
+<!-- Меню пользователя / начало -->
+<div id="user_menu">
+<ul>
+<li><a href="mailto:mr.nerison@ya.ru">Написать письмо</a></li>
+</ul>
+</div>
+<!-- Меню пользователя / конец -->
+
+<!-- Основное содержание / начало -->
+<div id="content">
+<h1>Перенос виртуалок</h1>
+<address>Последнее изменение: 26/07/2019 11:55:58</address>
+<p>Нет ничего проще. Поскольку каждая виртуальная машина это отдельный набор данных ZFS, достаточно остановить её, сделать снимок и отправить его на другой гипервизор.</p>
+
+<p>Каждую ночь мои виртуалки останавливаются, и снимки создаются автоматически. И если нет необходимости в сохранении самых последних актуальных данных (например, переносим резолвер), то можно воспользоваться одним из них. Для вывода списка снимков машины ns3 выполните команду:</p>
+
+<pre> root@vmm1:~ # zfs list -rt snapshot zroot/vm/ns3
+ NAME                          USED  AVAIL  REFER  MOUNTPOINT
+ zroot/vm/ns3@bkp_2407190401  10.2M      -  1.94G  -
+ zroot/vm/ns3@bkp_2507190405  8.21M      -  1.94G  -
+ zroot/vm/ns3@bkp_2607190401  3.81M      -  1.93G  -</pre>
+
+<p>Выберем крайний снимок и отправим его на гипервизор vmm2:</p>
+
+<pre> root@vmm1:~ # zfs send zroot/vm/ns3@bkp_2607190401 | ssh vmm2 zfs receive -v zroot/vm/ns3
+ receiving full stream of zroot/vm/ns3@bkp_2607190401 into zroot/vm/ns3@bkp_2607190401
+ received 3.37GB stream in 55 seconds (62.8MB/sec)</pre>
+
+<p>После окончания процесса передачи снимка зайдем на vmm2 и убедимся, что машина появилась в выводе команды vm list:</p>
+
+<pre> root@vmm2:~ # vm list
+ NAME  DATASTORE  LOADER     CPU  MEMORY  VNC  AUTOSTART  STATE
+ ns3   default    bhyveload  1    256M    -    No         Stopped</pre>
+
+<p>Готово. Останется остановить машину на vmm1 и запустить её на vmm2. Имеем ввиду, что конфигурация (датасет и имена виртуальных коммутаторов) гипервизоров должна быть одинаковой, иначе придётся чуть подредактировать файлы конфигурации ВМ. Также стоит отметить, что MAC-адрес виртуальной машины указан в том же конфиге ВМ и не изменится в процессе переноса машины.</p>
+
+<pre> root@vmm2:~ # vm start ns3
+ Starting ns3
+   * found guest in /vm/ns3
+   * booting...
+ root@vmm2:/home/largo # vm list
+ NAME  DATASTORE  LOADER     CPU  MEMORY  VNC  AUTOSTART  STATE
+ ns3   default    bhyveload  1    256M    -    No         Running (4379)</pre>
+
+<p>Если ранее на гипервизоре vmm1 машина ns3 запускалась автоматически при загрузке хост-системы, её нужно исключить из списка vm_list в файле /etc/rc.conf, и, соответственно, добавить в список на vmm2:</p>
+
+<pre> root@vmm2:~ # sysrc vm_list=&quot;ns3&quot;
+ vm_list:  -&gt; ns3
+ root@vmm2:~ # cat /etc/rc.conf
+ hostname=&quot;vmm2.ufnp.local&quot;
+ ... 
+ vm_enable=&quot;YES&quot;
+ vm_dir=&quot;zfs:zroot/vm&quot;
+ vm_list=&quot;ns3&quot;
+ vm_delay=&quot;5&quot;
+ ...</pre>
+
+<p>Во избежание всякого, можно также удалить виртуалку с vmm1:</p>
+
+<pre> root@vmm1:~ # vm destroy ns3
+ Are you sure you want to completely remove this virtual machine (y/n)? y
+ root@vmm1:~ #</pre>
+
+
+</div>
+<!-- Основное содержание / конец -->
+
+<!-- Копирайты / начало -->
+<div id="copyright">
+<ul>
+<li><a href="http://software.cherry-design.ru/">Простой онлайн блокнот &quot;Wikipad&quot; v2.0.1</a></li>
+<li>Design &amp; Programming &copy; 2007-2013 <a href="http://www.cherry-design.ru/">Web-studio &quot;Cherry-Design&quot;</a></li>
+</ul>
+</div>
+<!-- Копирайты / конец -->
+
+</body>
+</html>

@@ -2,7 +2,7 @@
         "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>Vybornov's Blog | Список постов</title>
+<title>Vybornov's Blog | Виртуальные коммутаторы</title>
 
 <!-- Web-design (C) 1998-2013 Mike Melnikov | cherry-design@mail.ru -->
 <!-- Web-design (C) 1998-2013 Cherry-Design | http://www.cherry-design.spb.ru/ -->
@@ -49,29 +49,22 @@
 
 <!-- Основное содержание / начало -->
 <div id="content">
-<h1>Список постов</h1>
-<address>Последнее изменение: 26/07/2019 11:58:44</address>
-<h2>bhyve + vm-bhyve</h2>
+<h1>Виртуальные коммутаторы</h1>
+<address>Последнее изменение: 25/07/2019 17:20:22</address>
+<p>Попробовать 1:</p>
 
-<ul>
-<li><a href="getting-started-with-bhyve.htm">Как начать работать с bhyve</a></li>
-<li><span class="nopage">Как создать виртуалку</span></li>
-<li><a href="migrate-virtual-machines.htm">Перенос виртуалок</a></li>
-<li><span class="nopage">Автоматическое создание снимков ВМ</span></li>
-<li><a href="virtual-switches.htm">Виртуальные коммутаторы</a></li>
-</ul>
+<ol>
+<li>порт в транк, интерфейс поднять, но не настраивать</li>
+<li>создать виртуальный коммутатор, указать номер влана, подключить к физическому интерейсу</li>
+</ol>
 
-<h2>Процедуры</h2>
+<p>Попробовать 2:</p>
 
-<ul>
-<li><a href="new-freebsd-server.htm">Ввод в эксплуатацию сервера под управлением FreeBSD</a></li>
-</ul>
-
-<h2>Wikipad</h2>
-
-<ul>
-<li><a href="help.htm">Помощь по разметке</a></li>
-</ul>
+<ol>
+<li>порт в транк, интерфейс поднять, но не настраивать</li>
+<li>создать интерфейсы в каждом влане</li>
+<li>по одному коммутатору на каждый vlan-интерфейс</li>
+</ol>
 
 
 </div>
