@@ -1,0 +1,158 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>Vybornov's Blog | Автоматическое создание снимков ВМ</title>
+
+<!-- Web-design (C) 1998-2013 Mike Melnikov | cherry-design@mail.ru -->
+<!-- Web-design (C) 1998-2013 Cherry-Design | http://www.cherry-design.spb.ru/ -->
+
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<meta http-equiv="сontent-language" content="ru" />
+
+<meta name="generator" content="Wikipad v2.0.1" />
+<meta name="keywords" content="Список ключевых слов" />
+<meta name="description" content="Краткое описание сайта" />
+
+<link rel="stylesheet" type="text/css" media="screen" href="css/screen.css" />
+<link rel="stylesheet" type="text/css" media="print" href="css/print.css" />
+
+
+</head>
+
+<body>
+
+<!-- Заголовок сайта / начало -->
+<div id="header">
+<h1><a href="/index.htm" style="text-decoration:none;color:black;">Vybornov's Blog</a></h1>
+<p></p>
+</div>
+<!-- Заголовок сайта / конец -->
+
+<!-- Основное меню / начало -->
+<div id="main_menu">
+<ul>
+<li><a href="index.htm">Список постов</a></li>
+<li><a href="about.htm">О проекте</a></li>
+<li><a href="resume.htm">Резюме</a></li>
+</ul>
+</div>
+<!-- Основное меню / конец -->
+
+<!-- Меню пользователя / начало -->
+<div id="user_menu">
+<ul>
+<li><a href="mailto:mr.nerison@ya.ru">Написать письмо</a></li>
+</ul>
+</div>
+<!-- Меню пользователя / конец -->
+
+<!-- Основное содержание / начало -->
+<div id="content">
+<h1>Автоматическое создание снимков ВМ</h1>
+<address>Последнее изменение: 12/08/2019 15:04:00</address>
+<h2>Создание снимков</h2>
+
+<p>Использовать в качестве датасета для vm-bhyve файловую систему ZFS &mdash; хорошая идея. Такое решение позволит нам создавать снимки ФС с конфигурацией и файлом-образом жесткого диска виртуальной машины. Я буду создавать снимки используя команду vm snapshot из пакета vm-bhyve. И хотя эта команда позволяет сделать снимок выполняемой гостевой ОС, во избежание всякого, завершим работу последней прежде, чем начать.</p>
+
+<pre> #!/bin/sh
+ 
+ list=&quot;`ls -I1 /vm/`&quot;
+ 
+ for i in $list
+ do
+   vm stop $i
+   while [ -f &quot;/vm/$i/run.lock&quot; ]
+   do
+     echo &quot;WARNING: $i appears to be running on vmm1 (locked), sleep 10 sec&quot;
+     sleep 10
+   done
+   vm snapshot $i@`date &quot;+bkp_%d%m%y%H%M&quot;`
+   sleep 10
+   vm start $i
+ done
+ exit 1</pre>
+
+<p>В существующей версии скрипт в цикле выполнит команды над каждой виртуальной машиной в датасете. Проверка существует ли файл run.lock выполняется для того, чтобы убедиться, что виртуальная машина действительно выключена.</p>
+
+<p>Для вывода списка всех снимков воспользуйтесь командой:</p>
+
+<pre> root@vmm1:~ # zfs list -t snapshot
+ NAME                          USED  AVAIL  REFER  MOUNTPOINT
+ zroot/vm/mx2@bkp_1208190400  3.46M      -  1.93G  -
+ zroot/vm/ns2@bkp_1008190401  15.1M      -  2.01G  -
+ zroot/vm/sm1@bkp_1008190401  51.1M      -  1.42G  -</pre>
+
+<h2>Удаление снимков</h2>
+
+<p>Если выполнять скрипт создания снимков по крону каждый день, то вскоре снимков накопиться очень много. Снимки тоже занимают место в zfs-пуле, потому старые снимки я буду периодически удалять, сохраняя в любой момент времени лишь три последних.</p>
+
+<pre> #!/bin/sh
+ 
+ list=&quot;`ls -I1 /vm/`&quot;
+ 
+ for i in $list
+   do
+   num=`zfs list -H -o name -t snapshot | grep $i@bkp | wc -l`
+   let num=$num-3 &gt; /dev/null
+   if [ $num -gt 0 ]
+     then
+       for d in `zfs list -H -o name -t snapshot | grep $i@bkp | head -&quot;$num&quot;`
+         do
+         zfs destroy $d
+         echo &quot;$d snapshot deleted&quot;
+       done
+   else
+     echo &quot;num of $i@snapshot(s) &lt; 3&quot;
+   fi
+ done
+ exit 1</pre>
+
+<h2>Восстановление из снимка</h2>
+
+<p>Если понадобится откатиться к последнему снимку, выполните команду vm rollback, передав ей имя снимка (виртуальная машина в этот момент должна быть остановлена):</p>
+
+<pre> root@vmm1:~ # vm rollback mx2@bkp_1208190400</pre>
+
+<p>Если необходимо вернуться к снимку постарше, используйте ключ -r (при этом все снимки новее будут удалены!):</p>
+
+<pre> root@vmm1:~ # vm rollback -r mx2@bkp_1008190400 </pre>
+
+<h2>Создание клонов</h2>
+
+<p>Также возможно создать клон виртуальной машины из снимка:</p>
+
+<pre> root@vmm1:~ # vm clone mx2@bkp_1008190400 mx2-1008</pre>
+
+<p>Однако после не получится удалить тот снимок без необходимости удалять клона. Создавать клонов имеет смысл только для того, чтобы заменить активную файловую систему клоном сразу как убедимся в том, что клон полностью отвечает нашим ожиданиям. Для этого:</p>
+
+<pre> root@vmm1:~ # zfs promote zroot/vm/mx2-1008
+ root@vmm1:~ # zfs rename zroot/vm/mx2 zroot/vm/mx2-old
+ root@vmm1:~ # zfs rename zroot/vm/mx2-1008 zroot/vm/mx2</pre>
+
+<p>После выполнения последних двух команд, машины mx2 и mx2-1008 исчезнут из вывода vm list. Дело в том, что теперь имя файла конфигурации машины не совпадает с именем файловой системы. Переименуйте файлы конфигурации:</p>
+
+<pre> root@vmm1:/vm/mx2 # mv /vm/mx2-old/mx2.conf /vm/mx2-old/mx2-old.conf
+ root@vmm1:/vm/mx2 # mv /vm/mx2/mx2-1008.conf /vm/mx2/mx2.conf</pre>
+
+<p>Теперь нужно удалить машину mx2-old:</p>
+
+<pre> root@vmm1:/vm/mx2 # vm destroy mx2-old</pre>
+
+<p>Не пользуйтесь возможностью создавать клонов, если не уверены в своих силах.</p>
+
+
+</div>
+<!-- Основное содержание / конец -->
+
+<!-- Копирайты / начало -->
+<div id="copyright">
+<ul>
+<li><a href="http://software.cherry-design.ru/">Простой онлайн блокнот &quot;Wikipad&quot; v2.0.1</a></li>
+<li>Design &amp; Programming &copy; 2007-2013 <a href="http://www.cherry-design.ru/">Web-studio &quot;Cherry-Design&quot;</a></li>
+</ul>
+</div>
+<!-- Копирайты / конец -->
+
+</body>
+</html>
