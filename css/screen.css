@@ -145,13 +145,13 @@ body {
 }
 
 #content h3 {
-    font-size: 13pt;
-    font-weight: bold;
+    font-size: 12pt;
+    font-weight: normal;^M
 }
 
 #content h4 {
     font-size: 10pt;
-    font-weight: bold;
+    font-weight: normal;^M
 }
 
 #content h5 {

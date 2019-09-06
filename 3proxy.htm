@@ -1,0 +1,258 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>Vybornov's Blog | Прозрачный 3proxy+WPAD</title>
+
+<!-- Web-design (C) 1998-2013 Mike Melnikov | cherry-design@mail.ru -->
+<!-- Web-design (C) 1998-2013 Cherry-Design | http://www.cherry-design.spb.ru/ -->
+
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<meta http-equiv="сontent-language" content="ru" />
+
+<meta name="generator" content="Wikipad v2.0.1" />
+<meta name="keywords" content="Список ключевых слов" />
+<meta name="description" content="Краткое описание сайта" />
+
+<link rel="stylesheet" type="text/css" media="screen" href="css/screen.css" />
+<link rel="stylesheet" type="text/css" media="print" href="css/print.css" />
+
+
+</head>
+
+<body>
+
+<!-- Заголовок сайта / начало -->
+<div id="header">
+<h1><a href="/index.htm" style="text-decoration:none;color:black;">Vybornov's Blog</a></h1>
+<p></p>
+</div>
+<!-- Заголовок сайта / конец -->
+
+<!-- Основное меню / начало -->
+<div id="main_menu">
+<ul>
+<li><a href="index.htm">Список постов</a></li>
+<li><a href="about.htm">О проекте</a></li>
+<li><a href="resume.htm">Резюме</a></li>
+</ul>
+</div>
+<!-- Основное меню / конец -->
+
+<!-- Меню пользователя / начало -->
+<div id="user_menu">
+<ul>
+<li><a href="mailto:mr.nerison@ya.ru">Написать письмо</a></li>
+</ul>
+</div>
+<!-- Меню пользователя / конец -->
+
+<!-- Основное содержание / начало -->
+<div id="content">
+<h1>Прозрачный 3proxy+WPAD</h1>
+<address>Последнее изменение: 04/09/2019 10:41:32</address>
+<h2>Подготовка к установке</h2>
+
+<p>Разворачивать буду на виртуальной машине bhyve под управлением FreeBSD 12.0. Машина с двумя сетевыми интерфейсами: vtnet0 глядит в локалку, vtnet1 с публичным адресом в интернеты. Очевидно, прежде всего необходимо включить PF и написать несколько правил, следуя логике: блокируем входящие подключения на внешнем интерфейсе, разрешаем исходящий трафик.</p>
+
+<pre> root@ag2:/ # vi /etc/pf.conf
+ block in
+ pass in on vtnet0
+ pass out
+ 
+ ~
+ ~
+ ~
+ 
+ :wq</pre>
+
+<p>Затем сперва подключаем модуль ядра, а после запускаем PF, передав утилите имя файла конфигурации:</p>
+
+<pre> root@ag2:/ # kldload pf.ko
+ root@ag2:/ # pfctl -evf /etc/pf.conf
+ block drop in all
+ pass in on vtnet0 all flags S/SA keep state
+ pass out all flags S/SA keep state</pre>
+
+<p>На будущее, чтобы PF загружался при старте системы добавляем соответствующую запись в rc.conf:</p>
+
+<pre> root@ag2:/ # sysrc pf_enable=&quot;YES&quot;</pre>
+
+<h2>Установка 3proxy</h2>
+
+<p>Устанавливаем 3proxy из пакетов:</p>
+
+<pre> root@ag2:/ # pkg install 3proxy</pre>
+
+<h2>Конфигурация 3proxy</h2>
+
+<p>Файл конфигурации 3proxy расположен по пути /usr/local/etc/3proxy.cfg. Я собрался проксировать только HTTP и HTTPS трафик и мой конфиг выглядит следующим образом:</p>
+
+<pre> root@ag2:/ # vi /usr/local/etc/3proxy.cfg
+ writable
+ nserver 192.168.x.198
+ nserver 192.168.x.200
+ nscache 65536
+ nscache6 65536
+ timeouts 1 5 30 60 180 1800 15 60
+ daemon
+ logformat &quot;L%H:%M:%S %N.%p %E %U %C:%c %R:%r %O %I %h %T&quot;
+ log /var/log/3proxy.log D
+ rotate 7
+ 
+ auth iponly
+ allow * 10.2.2.0/24,192.168.0.0/16 *.hostingradio.ru * CONNECT,HTTP,HTTPS
+ allow * 10.2.2.0/24,192.168.0.0/16 * 80-88,8080-8088 HTTP
+ allow * 10.2.2.0/24,192.168.0.0/16 * 443,8443 HTTPS
+ deny *
+ internal 192.168.x.204
+ external w.x.y.z
+ maxconn 2047
+ proxy -n
+ 
+ auth iponly
+ flush
+ allow * 10.2.2.0/24 192.168.x.204
+ maxconn 3
+ admin
+ 
+ ~
+ ~
+ ~
+ 
+ :wq</pre>
+
+<p>Следует сказать, что диррективы nserver, nscache и nscache6 необходимо включить в файл конфигурации обязательно (чтобы избежать небезопасного использования gethostbyname ()). Последний deny в ACL proxy, заданный явно, позволит избавиться от всплывающего окна в броузере с требованием авторизоваться на прокси при обращении к запрещенным ресурсам или при исползовании протокола FTP. А зачение maxconn напрямую связано со значением maxqlen в выводе netstat -Lan:</p>
+
+<pre> root@ag2:/ # netstat -Lan
+ Current listen queue sizes (qlen/incqlen/maxqlen)
+ Proto Listen                           Local Address         
+ tcp4  0/0/10                           127.0.0.1.25                
+ tcp4  0/0/1                            192.168.x.204.80     
+ tcp4  0/0/128                          192.168.x.204.3128      
+ unix  0/0/4                            /var/run/devd.pipe
+ unix  0/0/4                            /var/run/devd.seqpacket.pipe</pre>
+
+<p>При низком значении maxqlen (максимальный размер очереди соединений) вы будете получать сообщения о превышении лимита в /var/log/messages:</p>
+
+<pre> Aug 30 10:18:05 ag2 kernel: sonewconn: pcb 0xfffff80013137b70: Listen queue overflow: 193
+ already in queue awaiting acceptance (68 occurrences)</pre>
+
+<p>Настоящий максимальный размер всегда больше указанного в полтора раза, то есть, в данном случае это 193, а не 128.</p>
+
+<p>Секция с описанием настроек и запуск команды admin позволят подключаться к веб-интерфейсу, по-умолчанию доступному на 80 порту. Если в файле конфигурации также присутствует дирректива writable, конфигурацию можно изменять через этот интерфейс.</p>
+
+<dl>
+<dt>Важно!</dt>
+<dd>Сперва я дал виртуалке 2 ядра и 256МБ оперативной памяти. Тачка быстро начала свопиться и процесс 3proxy частенько съедал всё процессорное время. Значения load averege превышали показатели в 150. Вывод vmstat показывал, что количество процессов, ожидающих запуска много больше 200-250. Странички при этом грузились медленно или не полностью, можно было получить сообщение об отказе в соединении с прокси. Ситуация изменилась, когда я увеличил количество выделенной памяти до 512МБ и отдал виртуалке 4 ядра процессора. Советую использовать систему мониторинга, чтобы следить за утилизацией системных ресурсов во времени, а также утилиты top и vmstat для вывода информации о текущей нагрузке.</dd>
+</dl>
+
+<h2>Использование WPAD</h2>
+
+<p>Зачем нужен WPAD (протокол автоматической настройки прокси) отлично написано в википедии и на хабре. Здесь я закреплю информацию о том, как начать использовать технологию у себя в сети.</p>
+
+<p>Клиенты используют следующий порядок поиска файла настроек proxy:</p>
+
+<ol>
+<li>DHCP</li>
+<li>DNS A/CNAME</li>
+<li>DNS SRV</li>
+<li>DNS TXT</li>
+</ol>
+
+<p>Позаботимся о том, чтобы клиенты их нашли. И сперва займемся DHCP. DHCP опция 252 должна быть определена и должна содержать URL PAC-файла. В случае с ISC DHCP добавим в конфигурацию строки:</p>
+
+<pre> option wpad code 252 = text;
+ option wpad &quot;http://wpad.domain.local/wpad.dat&quot;; </pre>
+
+<p>Если DHCP-сервер не возвращает значение опции 252, клиент выполнит поиск сценария настройки на сервере с именем wpad, подставив основной суффикс подключения, и пытаясь разрешить его в адрес, выполнив DNS-запрос. Создадим A или CNAME запись для хоста wpad:</p>
+
+<pre> wpad        A      192.168.x.196</pre>
+
+<p>или</p>
+
+<pre> wpad        CNAME  ag1</pre>
+
+<p>И записи SRV и TXT:</p>
+
+<pre> _wpad._tcp  SRV    0 0 80 wpad.domain.local.
+ wpad        TXT    &quot;service: wpad:http://wpad.domain.local/wpad.dat&quot;</pre>
+
+<dl>
+<dt>Важно!</dt>
+<dd>TXT запись нельзя использовать с CNAME, только с A записью указанного в TXT-записи сервера.</dd>
+</dl>
+
+<p>Не обязательно создавать все записи, достаточно одной, какой &mdash; решите для себя сами.</p>
+
+<p>Когда клиент выяснил местоположение PAC-файла и разрешил имя сервера, он выполнит запрос HTTP GET в попытке получить этот файл. Создадим последний с именем wpad.dat (в нижнем регистре &mdash; это важно) с содержанием:</p>
+
+<pre> function FindProxyForURL(url, host)
+ {
+    if (isPlainHostName(host)) { return &quot;DIRECT&quot;; }
+    if (isInNet(host, &quot;10.0.0.0&quot;, &quot;255.0.0.0&quot;)) { return &quot;DIRECT&quot;; }
+    if (isInNet(host, &quot;172.16.0.0&quot;, &quot;255.240.0.0&quot;)) { return &quot;DIRECT&quot;; }
+    if (isInNet(host, &quot;192.168.0.0&quot;, &quot;255.255.0.0&quot;)) { return &quot;DIRECT&quot;; }
+    if (shExpMatch(host, &quot;*.domain.local&quot;)) { return &quot;DIRECT&quot;; }
+    return &quot;PROXY proxy.domain.local:3128; DIRECT;&quot;
+ }</pre>
+
+<p>Здесь перечислены сети и есть регулярное выражение соответствующее именам хостов в домене domain.local, куда клиент будет ходить без посредничества прокси-сервера. Соединения в адрес других узлов по протоколам HTTP и HTTPS будет пропущено через прокси-сервер proxy.domain.local.</p>
+
+<p>Созданный файл необходимо разместить в корневом каталоге на веб-сервере, указанном в URL PAC-файла. Для Apache24 я создам VirtualHost и добавлю в файл /usr/local/etc/apache24/mime.types строчку:</p>
+
+<pre> application/x-ns-proxy-autoconfig		pac dat</pre>
+
+<p>На этом всё. Переходим к конфигурации клиентов.</p>
+
+<h2>Свойства браузера</h2>
+
+<p>Чтобы автоконфигурация работала в IE, Edge и Chrome достаточно единственной галочки, вот этой:</p>
+
+<p><span class="center"><img src="files/proxy_auto_config.png" style="width: 394px; height: 346px;" alt="Image:proxy_auto_config.png" title="Image:proxy_auto_config.png" /></span></p>
+
+<p>C Firefox всё немного сложнее. Соединения будут идти через прокси только в случаях, если:</p>
+
+<ol>
+<li>в настрйоках Firefox флажок стоит напротив пункта &laquo;Автоматически определять настройки прокси для этой сети&raquo;</li>
+<li>в настройках Firefox флажок стоит напротив пункта &laquo;Использовать системные настройки прокси&raquo;, а в свойствах браузера (IE) указан адрес сценария втоматической настройки</li>
+</ol>
+
+<p><span class="center"><img src="files/proxy_pac_url.png" style="width: 394px; height: 346px;" alt="Image:proxy_pac_url.png" title="Image:proxy_pac_url.png" /></span></p>
+
+<p>Чтобы раскатить настройку связанную с адресом сценария автоматической настройки через доменные политики можно использовать reg-файл следующего содержания:</p>
+
+<pre> Windows Registry Editor Version 5.00
+ 
+ [HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\Internet Settings]
+ &quot;AutoConfigURL&quot;=&quot;http://wpad.domain.local/wpad.dat&quot;</pre>
+
+<p>Если указывать адрес прокси-сервера вручную, следует учесть, что настройка будет работать лишь в случае, если галки выше сняты, или автоконфигурация невозможна.</p>
+
+<p>Если необходимо выпустить машину в интернет через NAT, следует снять все галки в окне &laquo;Настройка параметров локальной сети&raquo; в Свойствах браузера.</p>
+
+<h2>Ссылки</h2>
+
+<ul>
+<li><a href="https://3proxy.ru/doc/">3proxy: Документация</a></li>
+<li><a href="https://3proxy.ru/documents/">3proxy: Документация 2</a></li>
+<li><a href="https://www.3proxy.ru/doc/man3/3proxy.cfg.3.html">3proxy.cfg</a></li>
+<li><a href="https://github.com/z3APA3A/3proxy/issues/332">Вопросы, комментарии, багрепорты и запросы фич #5</a></li>
+<li><a href="https://www.securitylab.ru/analytics/379619.php">Слабые стороны технологии WPAD</a></li>
+</ul>
+
+
+</div>
+<!-- Основное содержание / конец -->
+
+<!-- Копирайты / начало -->
+<div id="copyright">
+<ul>
+<li><a href="http://software.cherry-design.ru/">Простой онлайн блокнот &quot;Wikipad&quot; v2.0.1</a></li>
+<li>Design &amp; Programming &copy; 2007-2013 <a href="http://www.cherry-design.ru/">Web-studio &quot;Cherry-Design&quot;</a></li>
+</ul>
+</div>
+<!-- Копирайты / конец -->
+
+</body>
+</html>

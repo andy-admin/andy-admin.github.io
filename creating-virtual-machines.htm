@@ -1,0 +1,120 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>Vybornov's Blog | Как создать виртуалку</title>
+
+<!-- Web-design (C) 1998-2013 Mike Melnikov | cherry-design@mail.ru -->
+<!-- Web-design (C) 1998-2013 Cherry-Design | http://www.cherry-design.spb.ru/ -->
+
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<meta http-equiv="сontent-language" content="ru" />
+
+<meta name="generator" content="Wikipad v2.0.1" />
+<meta name="keywords" content="Список ключевых слов" />
+<meta name="description" content="Краткое описание сайта" />
+
+<link rel="stylesheet" type="text/css" media="screen" href="css/screen.css" />
+<link rel="stylesheet" type="text/css" media="print" href="css/print.css" />
+
+
+</head>
+
+<body>
+
+<!-- Заголовок сайта / начало -->
+<div id="header">
+<h1><a href="/index.htm" style="text-decoration:none;color:black;">Vybornov's Blog</a></h1>
+<p></p>
+</div>
+<!-- Заголовок сайта / конец -->
+
+<!-- Основное меню / начало -->
+<div id="main_menu">
+<ul>
+<li><a href="index.htm">Список постов</a></li>
+<li><a href="about.htm">О проекте</a></li>
+<li><a href="resume.htm">Резюме</a></li>
+</ul>
+</div>
+<!-- Основное меню / конец -->
+
+<!-- Меню пользователя / начало -->
+<div id="user_menu">
+<ul>
+<li><a href="mailto:mr.nerison@ya.ru">Написать письмо</a></li>
+</ul>
+</div>
+<!-- Меню пользователя / конец -->
+
+<!-- Основное содержание / начало -->
+<div id="content">
+<h1>Как создать виртуалку</h1>
+<address>Последнее изменение: 13/08/2019 18:18:01</address>
+<h2>Подготовка</h2>
+
+<p>Главным образом я использую bhyve для запуска виртуальных машин на базе ОС FreeBSD. И в этом посте мы разберем созданием именно такой виртуалки. Первым делом подготовимся и скачаем iso-образ диска для установки системы:</p>
+
+<pre> root@vmm2:~ # vm iso https://download.freebsd.org/ftp/releases/ISO-IMAGES/9.3/\
+ ? FreeBSD-9.3-RELEASE-amd64-disc1.iso</pre>
+
+<h2>Создание виртуальной машины</h2>
+
+<p>Следом создадим новую виртуальную машину с именем gw2 из шаблона /vm/.templates/default.conf и запустим её, начав процесс установки операционной системы:</p>
+
+<pre> root@vmm2:~ # vm create gw2
+ root@vmm2:~ # vm install -f gw2 FreeBSD-9.3-RELEASE-amd64-disc1.iso</pre>
+
+<p>Завершив установку, выйдем из консоли гостевой ОС нажав клавиши Ctrl+b и следом d.</p>
+
+<h2>Изменение аппаратной конфигурации</h2>
+
+<p>В данном примере я создаю сервер-маршрутизатор, и мне необходимо добавить ещё пару сетевых интерфейсов. Для этого откроем на редактирование файл конфигурации виртуальной машины, выполнив команду:</p>
+
+<pre> root@vmm2:~ # vm configure gw2</pre>
+
+<p>И добавим несколько строчек вида networkX_type и networkX_switch:</p>
+
+<pre> loader=&quot;bhyveload&quot;
+ cpu=1
+ memory=256M
+ network0_type=&quot;virtio-net&quot;
+ network0_switch=&quot;public&quot;
+ network1_type=&quot;virtio-net&quot;
+ network1_switch=&quot;dmz3&quot;
+ network2_type=&quot;virtio-net&quot;
+ network2_switch=&quot;dmz4&quot;
+ disk0_type=&quot;virtio-blk&quot;
+ disk0_name=&quot;disk0.img&quot;
+ uuid=&quot;cd3d2730-bce0-11e9-969d-ac162d8bad80&quot;
+ network0_mac=&quot;58:9c:fc:01:d3:9e&quot;
+ network1_mac=&quot;58:9c:fc:07:20:fe&quot;
+ network2_mac=&quot;58:9c:fc:06:ba:13&quot;
+ ~
+ ~
+ ~
+ /vm/gw2/gw2.conf: не модифицировано: строка 1</pre>
+
+<p>Очевидно, что параметр networkX_switch определяет к какому виртуальному коммутатору будет подключен интерфейс виртуальной машины. При необходимости здесь же можно изменить количество ядер процессора, объем ОЗУ, подключить дополнительный жесткий диск.</p>
+
+<h2>Подключение к консоли ВМ</h2>
+
+<p>Если машина не доступна по сети (нельзя зайти по SSH), можно подключиться к последовательному порту ВМ (COM-порт), выполнив команду vm console gw2.</p>
+
+<pre> root@vmm2:~ # vm console gw2</pre>
+
+
+</div>
+<!-- Основное содержание / конец -->
+
+<!-- Копирайты / начало -->
+<div id="copyright">
+<ul>
+<li><a href="http://software.cherry-design.ru/">Простой онлайн блокнот &quot;Wikipad&quot; v2.0.1</a></li>
+<li>Design &amp; Programming &copy; 2007-2013 <a href="http://www.cherry-design.ru/">Web-studio &quot;Cherry-Design&quot;</a></li>
+</ul>
+</div>
+<!-- Копирайты / конец -->
+
+</body>
+</html>

@@ -1,0 +1,156 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>Vybornov's Blog | ISC DHCP+Bind (DDNS)</title>
+
+<!-- Web-design (C) 1998-2013 Mike Melnikov | cherry-design@mail.ru -->
+<!-- Web-design (C) 1998-2013 Cherry-Design | http://www.cherry-design.spb.ru/ -->
+
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<meta http-equiv="сontent-language" content="ru" />
+
+<meta name="generator" content="Wikipad v2.0.1" />
+<meta name="keywords" content="Список ключевых слов" />
+<meta name="description" content="Краткое описание сайта" />
+
+<link rel="stylesheet" type="text/css" media="screen" href="css/screen.css" />
+<link rel="stylesheet" type="text/css" media="print" href="css/print.css" />
+
+
+</head>
+
+<body>
+
+<!-- Заголовок сайта / начало -->
+<div id="header">
+<h1><a href="/index.htm" style="text-decoration:none;color:black;">Vybornov's Blog</a></h1>
+<p></p>
+</div>
+<!-- Заголовок сайта / конец -->
+
+<!-- Основное меню / начало -->
+<div id="main_menu">
+<ul>
+<li><a href="index.htm">Список постов</a></li>
+<li><a href="about.htm">О проекте</a></li>
+<li><a href="resume.htm">Резюме</a></li>
+</ul>
+</div>
+<!-- Основное меню / конец -->
+
+<!-- Меню пользователя / начало -->
+<div id="user_menu">
+<ul>
+<li><a href="mailto:mr.nerison@ya.ru">Написать письмо</a></li>
+</ul>
+</div>
+<!-- Меню пользователя / конец -->
+
+<!-- Основное содержание / начало -->
+<div id="content">
+<h1>ISC DHCP+Bind (DDNS)</h1>
+<address>Последнее изменение: 06/09/2019 10:31:33</address>
+<h2>Что такое и зачем?</h2>
+
+<p>Будем разворачивать службу DHCP (ISC DHCP) совместно со службой DNS (Bind) на виртуальной машине bhyve под управлением FreeBSD 12. Выбор ПО продиктован необходимостью запользовать функцию DDNS. В файле-конфигурации службы DHCP я буду определять пару: dns-имя машины &mdash; MAC-адрес. Когда служба ответит на запрос клиента о настройках протокола TCP/IP и предложение будет принято клиентом, DHCP уведомит DNS о необходимости внести записи типа А и PTR в соответствующие файлы данных зон: прямую и обратную. Если время аренды ip-адреса выйдет и клиент не продлит аренду, или отправит сообщение DHCPRELEASE в адрес DHCP-сервера, последний также заставит DNS удалить обозначенные записи из файлов данных зон. Вам не нужно будет добавлять и удалять информацию руками, данные будут актуальны в любой момент времени и вы легко сможете изменять имена узлов в сети, редактируя конфигурацию службы DHCP.</p>
+
+<h2>Установка Bind</h2>
+
+<p>Начиная с FreeBSD 10 Bind больше не доступен &laquo;из коробки&raquo;, потому придется поставить его самостоятельно. Поищем что есть в пакетах:</p>
+
+<pre> root@ns1:~ # pkg search ^bind
+ bind-tools-9.14.3              Command line tools from BIND: delv, dig, host, nslookup...
+ bind9-devel-9.15.0.a0.2019.06.28 BIND DNS suite with updated DNSSEC and DNS64
+ bind911-9.11.8                 BIND DNS suite with updated DNSSEC and DNS64
+ bind914-9.14.3                 BIND DNS suite with updated DNSSEC and DNS64</pre>
+
+<p>Остановимся на последней стабильной версии и выполним установку:</p>
+
+<pre> root@ns1:~ # pkg install bind914</pre>
+
+<h2>Настройка Bind</h2>
+
+<p>Далее необходимо выполнить настройку. Bind не будет резолвером (оставим это Unbound), а будет авторитетным DNS для зоны domain.local. Имя зоны совпадает с именем домена Windows, и потому в повествовании появляется третий участник отношений по обмену информацией с DNS &mdash; это контроллер домена Windows. Определимся с полным списком:</p>
+
+<ol>
+<li>Сервер со службами DNS и DHCP ns1 (192.168.1.4)</li>
+<li>Контроллер домена Windows dc1 (192.168.1.10)</li>
+<li>Рабочие станции, сетевые принтеры, активное сетевое оборудование, etc.</li>
+</ol>
+
+<p>Поскольку мы ставили Bind из пакетов, файлы конфигурации стоит искать в каталоге /usr/local/etc/namedb. Откроем для редактирования файл named.conf и приведем содержимое к виду:</p>
+
+<pre> options {
+   directory	&quot;/usr/local/etc/namedb/working&quot;;
+   pid-file	&quot;/var/run/named/pid&quot;;
+   dump-file	&quot;/var/dump/named_dump.db&quot;;
+   statistics-file	&quot;/var/stats/named.stats&quot;;
+ 
+   masterfile-format text;
+   listen-on	{ 127.0.0.1; 192.168.1.4; };
+ 
+   disable-empty-zone &quot;255.255.255.255.IN-ADDR.ARPA&quot;;
+   disable-empty-zone &quot;0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.IP6.ARPA&quot;;
+   disable-empty-zone &quot;1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.IP6.ARPA&quot;;
+ 
+   dnssec-enable no;
+   dnssec-validation no;
+ };
+ 
+ include &quot;/usr/local/etc/namedb/rndc.key&quot;;
+ 
+ controls {
+   inet 127.0.0.1 port 953 allow { 127.0.0.1; } keys { &quot;rndc-key&quot;; }; 
+ };
+ 
+ logging {
+   channel default {
+     file &quot;/var/log/bind9/default.log&quot; versions 1 size 10M;
+     severity dynamic;
+     print-category yes;
+     print-severity yes;
+     print-time yes;
+   };
+   channel update {
+     file &quot;/var/log/bind9/update.log&quot; versions 1 size 10M;
+     severity dynamic;
+     print-category yes;
+     print-severity yes;
+     print-time yes;
+   };
+   channel xfer_out { 
+     file &quot;/var/log/bind9/xfer-out.log&quot; versions 1 size 10k;
+     severity dynamic;
+     print-severity yes;
+     print-time yes;
+   };
+   channel query {
+     file &quot;/var/log/bind9/query.log&quot; versions 2 size 10M;
+     print-time yes;
+     severity info;
+   };
+   category default { default_syslog; default; };
+   category update { update; };
+   category xfer-out { xfer_out; };
+   category update-security { null; };
+   category queries { query; };
+ };</pre>
+
+<h2>Ещё не конец...</h2>
+
+
+</div>
+<!-- Основное содержание / конец -->
+
+<!-- Копирайты / начало -->
+<div id="copyright">
+<ul>
+<li><a href="http://software.cherry-design.ru/">Простой онлайн блокнот &quot;Wikipad&quot; v2.0.1</a></li>
+<li>Design &amp; Programming &copy; 2007-2013 <a href="http://www.cherry-design.ru/">Web-studio &quot;Cherry-Design&quot;</a></li>
+</ul>
+</div>
+<!-- Копирайты / конец -->
+
+</body>
+</html>
