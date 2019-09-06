@@ -50,7 +50,7 @@
 <!-- Основное содержание / начало -->
 <div id="content">
 <h1>Openfire+LDAP и Spark+SSO via GSSAPI</h1>
-<address>Последнее изменение: 06/09/2019 10:43:38</address>
+<address>Последнее изменение: 06/09/2019 11:28:10</address>
 <p>У меня всё заработало в конфигурации:</p>
 
 <ul>
@@ -64,23 +64,23 @@
 
 <p>Мастер конфигурации будет запущен при первом обращении к веб-интерфейсу. Будем настраивать по порядку в соответствие со скринами ниже:</p>
 
-<p>Язык по желанию, я оставляю английский. <span class="center"><img src="files/openfire_setup_1.png" style="width: 615px; height: 628px;" alt="Image:openfire_setup_1.png" title="Image:openfire_setup_1.png" /></span></p>
+<p>Язык по желанию, я оставляю английский. <span class="center"><img src="files/openfire_setup_1.png" style="width: 723px; height: 664px;" alt="Image:openfire_setup_1.png" title="Image:openfire_setup_1.png" /></span></p>
 
-<p>XMPP Domain Name совпадает с именем домена Windows, в поле FQDN указыаем dns-имя сервера с развернутой службой Openfire. Убедитесь, что записи (A и PTR) в прямой и обратной зоне соответственно присутствуют и корректны. <span class="center"><img src="files/openfire_setup_2.png" style="width: 615px; height: 556px;" alt="Image:openfire_setup_2.png" title="Image:openfire_setup_2.png" /></span></p>
+<p>XMPP Domain Name совпадает с именем домена Windows, в поле FQDN указыаем dns-имя сервера с развернутой службой Openfire. Убедитесь, что записи (A и PTR) в прямой и обратной зоне соответственно присутствуют и корректны. <span class="center"><img src="files/openfire_setup_2.png" style="width: 723px; height: 589px;" alt="Image:openfire_setup_2.png" title="Image:openfire_setup_2.png" /></span></p>
 
-<p>Оставляем флаг на Standart Database Connection. <span class="center"><img src="files/openfire_setup_3.png" style="width: 615px; height: 447px;" alt="Image:openfire_setup_3.png" title="Image:openfire_setup_3.png" /></span></p>
+<p>Оставляем флаг на Standart Database Connection. <span class="center"><img src="files/openfire_setup_3.png" style="width: 723px; height: 476px;" alt="Image:openfire_setup_3.png" title="Image:openfire_setup_3.png" /></span></p>
 
-<p>Строка подключения к БД должна выглядеть следующим образом: "jdbc:mysql://db1.domain.local:3306/openfire?rewriteBatchedStatements=true&characterEncoding=UTF-8&characterSetResults=UTF-8", где db1.domain.local &mdash; имя сервера СУБД, а openfire &mdash; имя базы данных. При необходимости в конце можно дописать таймзону: "...&serverTimezone=Asia/Novosibirsk". В полях username и password указываем реквизиты пользователя, имеющего права на создание таблиц и записей в БД openfire. <span class="center"><img src="files/openfire_setup_4.png" style="width: 615px; height: 615px;" alt="Image:openfire_setup_4.png" title="Image:openfire_setup_4.png" /></span></p>
+<p>Строка подключения к БД должна выглядеть следующим образом: "jdbc:mysql://db1.domain.local:3306/openfire?rewriteBatchedStatements=true&characterEncoding=UTF-8&characterSetResults=UTF-8", где db1.domain.local &mdash; имя сервера СУБД, а openfire &mdash; имя базы данных. При необходимости в конце можно дописать таймзону: "...&serverTimezone=Asia/Novosibirsk". В полях username и password указываем реквизиты пользователя, имеющего права на создание таблиц и записей в БД openfire. <span class="center"><img src="files/openfire_setup_4.png" style="width: 723px; height: 656px;" alt="Image:openfire_setup_4.png" title="Image:openfire_setup_4.png" /></span></p>
 
-<p>В качестве источника данных о пользователях XMPP-домена будем использовать LDAP-каталог. <span class="center"><img src="files/openfire_setup_5.png" style="width: 615px; height: 460px;" alt="Image:openfire_setup_5.png" title="Image:openfire_setup_5.png" /></span></p>
+<p>В качестве источника данных о пользователях XMPP-домена будем использовать LDAP-каталог. <span class="center"><img src="files/openfire_setup_5.png" style="width: 723px; height: 485px;" alt="Image:openfire_setup_5.png" title="Image:openfire_setup_5.png" /></span></p>
 
-<p>В поле Host указываем dns-имя контроллера домена Windows. В секции Authentication логин и пароль администратора домена. <span class="center"><img src="files/openfire_setup_6.png" style="width: 615px; height: 615px;" alt="Image:openfire_setup_6.png" title="Image:openfire_setup_6.png" /></span></p>
+<p>В поле Host указываем dns-имя контроллера домена Windows. В секции Authentication логин и пароль администратора домена. <span class="center"><img src="files/openfire_setup_6.png" style="width: 723px; height: 656px;" alt="Image:openfire_setup_6.png" title="Image:openfire_setup_6.png" /></span></p>
 
 <p>Следующие два шага пропускаем, оставляя всё без изменений. В качестве логина будет использоваться значение атрибута sAMAccountName, в списке контактов пользователь будет отображаться в соответствие со значением атрибута displayName.</p>
 
-<p>Далее добавляем пользователей из числа доменных, какие будут иметь доступ к веб-интерфейсу Openfire и права администратора службы. <span class="center"><img src="files/openfire_setup_7.png" style="width: 615px; height: 438px;" alt="Image:openfire_setup_7.png" title="Image:openfire_setup_7.png" /></span></p>
+<p>Далее добавляем пользователей из числа доменных, какие будут иметь доступ к веб-интерфейсу Openfire и права администратора службы. <span class="center"><img src="files/openfire_setup_7.png" style="width: 723px; height: 401px;" alt="Image:openfire_setup_7.png" title="Image:openfire_setup_7.png" /></span> <span class="center"><img src="files/openfire_setup_8.png" style="width: 723px; height: 479px;" alt="Image:openfire_setup_8.png" title="Image:openfire_setup_8.png" /></span></p>
 
-<p>Первоначальная конфигурация закончена. Логинимся и переходим к настройке аутентификации через GSSAPI в связке с Kerberos. <span class="center"><img src="files/openfire_setup_8.png" style="width: 615px; height: 344px;" alt="Image:openfire_setup_8.png" title="Image:openfire_setup_8.png" /></span></p>
+<p>Первоначальная конфигурация закончена. Логинимся и переходим к настройке аутентификации через GSSAPI в связке с Kerberos. <span class="center"><img src="files/openfire_setup_9.png" style="width: 723px; height: 362px;" alt="Image:openfire_setup_9.png" title="Image:openfire_setup_9.png" /></span></p>
 
 <dl>
 <dt>Важно!</dt>
