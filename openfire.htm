@@ -50,7 +50,7 @@
 <!-- Основное содержание / начало -->
 <div id="content">
 <h1>Openfire+LDAP и Spark+SSO via GSSAPI</h1>
-<address>Последнее изменение: 21/08/2019 17:11:00</address>
+<address>Последнее изменение: 06/09/2019 10:43:38</address>
 <p>У меня всё заработало в конфигурации:</p>
 
 <ul>
@@ -70,7 +70,7 @@
 
 <p>Оставляем флаг на Standart Database Connection. <span class="center"><img src="files/openfire_setup_3.png" style="width: 615px; height: 447px;" alt="Image:openfire_setup_3.png" title="Image:openfire_setup_3.png" /></span></p>
 
-<p>Строка подключения к БД должна выглядеть следующим образом: "jdbc:mysql://db1.ufnp.local:3306/openfire?rewriteBatchedStatements=true&characterEncoding=UTF-8&characterSetResults=UTF-8", где db1.ufnp.local &mdash; имя сервера СУБД, а openfire &mdash; имя базы данных. При необходимости в конце можно дописать таймзону: "...&serverTimezone=Asia/Novosibirsk". В полях username и password указываем реквизиты пользователя, имеющего права на создание таблиц и записей в БД openfire. <span class="center"><img src="files/openfire_setup_4.png" style="width: 615px; height: 615px;" alt="Image:openfire_setup_4.png" title="Image:openfire_setup_4.png" /></span></p>
+<p>Строка подключения к БД должна выглядеть следующим образом: "jdbc:mysql://db1.domain.local:3306/openfire?rewriteBatchedStatements=true&characterEncoding=UTF-8&characterSetResults=UTF-8", где db1.domain.local &mdash; имя сервера СУБД, а openfire &mdash; имя базы данных. При необходимости в конце можно дописать таймзону: "...&serverTimezone=Asia/Novosibirsk". В полях username и password указываем реквизиты пользователя, имеющего права на создание таблиц и записей в БД openfire. <span class="center"><img src="files/openfire_setup_4.png" style="width: 615px; height: 615px;" alt="Image:openfire_setup_4.png" title="Image:openfire_setup_4.png" /></span></p>
 
 <p>В качестве источника данных о пользователях XMPP-домена будем использовать LDAP-каталог. <span class="center"><img src="files/openfire_setup_5.png" style="width: 615px; height: 460px;" alt="Image:openfire_setup_5.png" title="Image:openfire_setup_5.png" /></span></p>
 
@@ -91,10 +91,10 @@
 
 <h4>На свервере имён</h4>
 
-<p>Добавьте в файл данных зоны _tcp.ваш.домен (у меня _tcp.ufnp.local) две SRV-записи (указав на сервер с Openfire) вида:</p>
+<p>Добавьте в файл данных зоны _tcp.ваш.домен (у меня _tcp.domain.local) две SRV-записи (указав на сервер с Openfire) вида:</p>
 
-<pre> _xmpp-client   86400 IN SRV 	0 5 5222 im1.ufnp.local.
- _xmpp-server   86400 IN SRV 	0 5 5269 im1.ufnp.local.</pre>
+<pre> _xmpp-client   86400 IN SRV 	0 5 5222 im1.domain.local.
+ _xmpp-server   86400 IN SRV 	0 5 5269 im1.domain.local.</pre>
 
 <h4>На контроллере домена</h4>
 
@@ -103,14 +103,14 @@
 <li>Зарегистрируйте первичное имя сервиса xmpp (Service Principal Name), выполнив команду:</li>
 </ul>
 
-<pre> setspn -S xmpp/im1.ufnp.local@UFNP.LOCAL keytab</pre>
+<pre> setspn -S xmpp/im1.domain.local@DOMAIN.LOCAL keytab</pre>
 
 <ul>
 <li>Далее используйте ktpass для установки дополнительной информации и создания файла keytab:</li>
 </ul>
 
-<pre> ktpass -princ xmpp/im1.ufnp.local@UFNP.LOCAL -mapuser keytab@ufnp.local -crypto all -pass *
- -ptype KRB5_NT_PRINCIPAL -out xmpp.keytab</pre>
+<pre> ktpass -princ xmpp/im1.domain.local@DOMAIN.LOCAL -mapuser keytab@domain.local -crypto all 
+ -pass * -ptype KRB5_NT_PRINCIPAL -out xmpp.keytab</pre>
 
 <p>После нажатия клавиши Enter введите пароль пользователя keytab, созданного на первом шаге. Сгенерированный файл xmpp.keytab переместите на сервер с развернутым Openfire, он пригодится позднее.</p>
 
@@ -135,21 +135,21 @@
 </li>
 </ul>
 
-<p>В файле krb5.ini замените UFNP.LOCAL на имя своего домена, сохраняя регистр, dc1.UFNP.LOCAL на имя контроллера домена Windows. Разместите файл по пути C:\Windows\krb5.ini.</p>
+<p>В файле krb5.ini замените DOMAIN.LOCAL на имя своего домена, сохраняя регистр, dc1.DOMAIN.LOCAL на имя контроллера домена Windows. Разместите файл по пути C:\Windows\krb5.ini.</p>
 
 <pre> [libdefaults]
-     default_realm = UFNP.LOCAL
+     default_realm = DOMAIN.LOCAL
  
  [realms]
-     UFNP.LOCAL = {
-         kdc = dc1.UFNP.LOCAL
- 	 admin_server = dc1.UFNP.LOCAL
-         default_domain = UFNP.LOCAL
+     DOMAIN.LOCAL = {
+         kdc = dc1.DOMAIN.LOCAL
+ 	 admin_server = dc1.DOMAIN.LOCAL
+         default_domain = DOMAIN.LOCAL
      }
   
  [domain_realms]
-     UFNP.LOCAL = UFNP.LOCAL
-     .UFNP.LOCAL = UFNP.LOCAL</pre>
+     DOMAIN.LOCAL = DOMAIN.LOCAL
+     .DOMAIN.LOCAL = DOMAIN.LOCAL</pre>
 
 <p>В файле gss.conf измените значения realm и principal, указав собственные. Разместите файл по пути C:\Program Files\openfire\conf\gss.conf.</p>
 
@@ -161,8 +161,8 @@
      useKeyTab=true
          isInitiator=false
          debug=true
-     realm=&quot;UFNP.LOCAL&quot;
-     principal=&quot;xmpp/im1.ufnp.local&quot;;
+     realm=&quot;DOMAIN.LOCAL&quot;
+     principal=&quot;xmpp/im1.domain.local&quot;;
  };</pre>
 
 <h4>Через веб-интерфейс</h4>
@@ -184,7 +184,7 @@
 </tr>
 <tr>
 <td style="text-align: left;">sasl.realm</td>
-<td style="text-align: left;">UFNP.LOCAL</td>
+<td style="text-align: left;">DOMAIN.LOCAL</td>
 </tr>
 </table>
 
@@ -194,7 +194,7 @@
 
 <h2>Ставим клиента и подключаемся</h2>
 
-<p>На рабочей станции пользователя ставим Spark-клиента и создаем ключ реестра AllowTGTSessionKey со значением dword равным 1, воспользовавшись тем же сценарием, что ранее. После запуска клиента настраиваем его в соответствие с <a href="files/nstruktsiya_po_nastroike_programmy_spark.pdf">Инструкцией по настройке программы Spark</a>.</p>
+<p>На рабочей станции пользователя ставим Spark-клиента и создаем ключ реестра AllowTGTSessionKey со значением dword равным 1, воспользовавшись тем же сценарием, что ранее. После запуска клиента настраиваем его в соответствие с <a class="nopage" href="files.php?action=upload&filename=nstruktsiya_po_nastroike_programmy_spark_old.pdf">Инструкцией по настройке программы Spark</a>.</p>
 
 <h2>Решение проблем с аутентификацией</h2>
 
