@@ -1,0 +1,103 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>Vybornov's Blog | Как использовать cloud images</title>
+
+<!-- Web-design (C) 1998-2013 Mike Melnikov | cherry-design@mail.ru -->
+<!-- Web-design (C) 1998-2013 Cherry-Design | http://www.cherry-design.spb.ru/ -->
+
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<meta http-equiv="сontent-language" content="ru" />
+
+<meta name="generator" content="Wikipad v2.0.1" />
+<meta name="keywords" content="Список ключевых слов" />
+<meta name="description" content="Краткое описание сайта" />
+
+<link rel="stylesheet" type="text/css" media="screen" href="css/screen.css" />
+<link rel="stylesheet" type="text/css" media="print" href="css/print.css" />
+
+
+</head>
+
+<body>
+
+<!-- Заголовок сайта / начало -->
+<div id="header">
+<h1><a href="/index.htm" style="text-decoration:none;color:black;">Vybornov's Blog</a></h1>
+<p></p>
+</div>
+<!-- Заголовок сайта / конец -->
+
+<!-- Основное меню / начало -->
+<div id="main_menu">
+<ul>
+</ul>
+</div>
+<!-- Основное меню / конец -->
+
+<!-- Меню пользователя / начало -->
+<div id="user_menu">
+<ul>
+<li><a href="mailto:mr.nerison@ya.ru">Написать письмо</a></li>
+</ul>
+</div>
+<!-- Меню пользователя / конец -->
+
+<!-- Основное содержание / начало -->
+<div id="content">
+<h1>Как использовать cloud images</h1>
+<address>Последнее изменение: 14/11/2019 17:44:32</address>
+<p>В сети <a href="https://download.freebsd.org/ftp/releases/VM-IMAGES/">легко найти</a> готовые образы виртуальных машин с развернутой системой FreeBSD. Также легко их можно использовать для создания новых гостей, сразу же запуская их в работу. Образ должен быть в формате RAW или QCOW2. Чтобы использовать эту функцию, вам нужно установить пакет qemu-utils:</p>
+
+<pre> root@vmm1:~ # pkg install qemu-utils</pre>
+
+<p>Команда vm img загрузит образ в хранилище данных и при необходимости распакует его (поддерживаются файлы .xz, .tar.gz и .gz):</p>
+
+<pre> root@vmm1:~ # vm img https://download.freebsd.org/ftp/releases/VM-IMAGES/12.1-RELEASE/\
+ amd64/Latest/FreeBSD-12.1-RELEASE-amd64.raw.xz</pre>
+
+<p>Для создания новой виртуальной машины из образа выполните:</p>
+
+<pre> root@vmm1:~ # vm create -i FreeBSD-12.1-RELEASE-amd64.raw fbsd121</pre>
+
+<p>Запустив машину, выполните действия:</p>
+
+<ol>
+<li>смените пароль рута</li>
+<li>настройте hostname</li>
+<li>sshd в автозагрузку</li>
+<li>установите часовой пояс</li>
+<li>ntpdate в автозагрузку</li>
+<li>заведите пользователя в группе wheel</li>
+<li>cкопируйте на машину ключ для авторизации по ssh</li>
+<li>обновите систему, установив последние патчи</li>
+<li>обновите менеджер пакетов и пакетную базу</li>
+<li>установите пакет munin-node и создайте симлинки на нужные плагины</li>
+<li>установите другие пакеты в соответствие условиям задачи, настройте ПО и введите сервер в эусплуатацию</li>
+</ol>
+
+<p>Чтобы просмотреть загруженные образы выполните команду vm img.</p>
+
+<pre> root@vmm1:~ # vm img
+ DATASTORE           FILENAME
+ default             FreeBSD-12.0-RELEASE-amd64.raw
+ default             FreeBSD-12.1-RELEASE-amd64.raw</pre>
+
+<p>Для удаления образа из хранилища и списка достаточно удалить файл образа из каталога /vm/.img.</p>
+
+
+</div>
+<!-- Основное содержание / конец -->
+
+<!-- Копирайты / начало -->
+<div id="copyright">
+<ul>
+<li><a href="http://software.cherry-design.ru/">Простой онлайн блокнот &quot;Wikipad&quot; v2.0.1</a></li>
+<li>Design &amp; Programming &copy; 2007-2013 <a href="http://www.cherry-design.ru/">Web-studio &quot;Cherry-Design&quot;</a></li>
+</ul>
+</div>
+<!-- Копирайты / конец -->
+
+</body>
+</html>

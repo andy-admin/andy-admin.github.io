@@ -1,0 +1,94 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>Vybornov's Blog | Как создать свой образ ВМ</title>
+
+<!-- Web-design (C) 1998-2013 Mike Melnikov | cherry-design@mail.ru -->
+<!-- Web-design (C) 1998-2013 Cherry-Design | http://www.cherry-design.spb.ru/ -->
+
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<meta http-equiv="сontent-language" content="ru" />
+
+<meta name="generator" content="Wikipad v2.0.1" />
+<meta name="keywords" content="Список ключевых слов" />
+<meta name="description" content="Краткое описание сайта" />
+
+<link rel="stylesheet" type="text/css" media="screen" href="css/screen.css" />
+<link rel="stylesheet" type="text/css" media="print" href="css/print.css" />
+
+
+</head>
+
+<body>
+
+<!-- Заголовок сайта / начало -->
+<div id="header">
+<h1><a href="/index.htm" style="text-decoration:none;color:black;">Vybornov's Blog</a></h1>
+<p></p>
+</div>
+<!-- Заголовок сайта / конец -->
+
+<!-- Основное меню / начало -->
+<div id="main_menu">
+<ul>
+</ul>
+</div>
+<!-- Основное меню / конец -->
+
+<!-- Меню пользователя / начало -->
+<div id="user_menu">
+<ul>
+<li><a href="mailto:mr.nerison@ya.ru">Написать письмо</a></li>
+</ul>
+</div>
+<!-- Меню пользователя / конец -->
+
+<!-- Основное содержание / начало -->
+<div id="content">
+<h1>Как создать свой образ ВМ</h1>
+<address>Последнее изменение: 15/11/2019 17:34:34</address>
+<p>Создавать новые виртуальные машины проще и быстрее на основе ранее подготовленного образа ВМ с установленными: операционной системой, патчами безопасности и необходимым программным обеспечением.</p>
+
+<p>Выполните эталонную установку системного и прикладного ПО на новую виртуальную машину, остановите её и создайте образ, выполнив команду vm image create:</p>
+
+<pre> root@vmm1:~ # vm image create -d &quot;FreeBSD 12.0-RELEASE-p12 GENERIC amd64&quot; -u fbsd120</pre>
+
+<p>Ключ -d позволяет добавить короткое описание к образу, а ключ -u указывает на то, что сжимать образ не требуется. В связи с обнаруженным багом, связанным с невозможностью распаковать сжатый образ, рекомендую, собственно, не жать.</p>
+
+<p>Позднее вы сможете продолжить работу с этой машиной и даже удалить её. Для просмотра списка образов используйте команду vm image list:</p>
+
+<pre> root@vmm1:~ # vm image list
+ UUID                                  NAME     CREATED
+ 222aced0-06be-11ea-8337-d89d673217e4  fbsd120  четверг, 14 ноября 2019 г. 16:07:07 (+07)
+ 22123fv0-0ase-11qn-8337-d89d673217e4  fbsd121  пятница, 15 ноября 2019 г. 15:35:10 (+07)</pre>
+
+<p>Чтобы создать новую ВМ из образа воспользуйтесь командой vm image provision, передав ей в качестве аргументов uuid образа и имя вновь создаваемой ВМ:</p>
+
+<pre> root@vmm1:~ # vm image provision 222aced0-06be-11ea-8337-d89d673217e4 tst1</pre>
+
+<p>Для того чтобы удалить образ из хранилища и списка выполните команду vm image destroy:</p>
+
+<pre> root@vmm1:~ # vm image destroy 222aced0-06be-11ea-8337-d89d673217e4</pre>
+
+<p>Для хранения файлов образов совместно с файлами описаний используется отдельный набор данных zfs с точкой монтирования images в хранилище по-умолчанию. Это при необходимости позволяет переместить все созданные на одном гипервизоре образы на другой, используя механизм zfs send/recv, предварительно сделав снимок с файловой системы:</p>
+
+<pre> root@vmm1:~ # zfs send zroot/vm/images@transfer | ssh vmm2 zfs recv zroot/vm/images</pre>
+
+<p>В случае, если файловая система уже существует на гипервизоре-приёмнике, имеет смысл копировать лишь нужные файлы образов, используя scp.</p>
+
+
+</div>
+<!-- Основное содержание / конец -->
+
+<!-- Копирайты / начало -->
+<div id="copyright">
+<ul>
+<li><a href="http://software.cherry-design.ru/">Простой онлайн блокнот &quot;Wikipad&quot; v2.0.1</a></li>
+<li>Design &amp; Programming &copy; 2007-2013 <a href="http://www.cherry-design.ru/">Web-studio &quot;Cherry-Design&quot;</a></li>
+</ul>
+</div>
+<!-- Копирайты / конец -->
+
+</body>
+</html>
