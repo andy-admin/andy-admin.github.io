@@ -1,0 +1,173 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>Vybornov's Blog | Установка Zimbra Collaboration OSE</title>
+
+<!-- Web-design (C) 1998-2013 Mike Melnikov | cherry-design@mail.ru -->
+<!-- Web-design (C) 1998-2013 Cherry-Design | http://www.cherry-design.spb.ru/ -->
+
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<meta http-equiv="сontent-language" content="ru" />
+
+<meta name="generator" content="Wikipad v2.0.1" />
+<meta name="keywords" content="Список ключевых слов" />
+<meta name="description" content="Краткое описание сайта" />
+
+<link rel="stylesheet" type="text/css" media="screen" href="css/screen.css" />
+<link rel="stylesheet" type="text/css" media="print" href="css/print.css" />
+
+
+</head>
+
+<body>
+
+<!-- Заголовок сайта / начало -->
+<div id="header">
+<h1><a href="/index.htm" style="text-decoration:none;color:black;">Vybornov's Blog</a></h1>
+<p></p>
+</div>
+<!-- Заголовок сайта / конец -->
+
+<!-- Основное меню / начало -->
+<div id="main_menu">
+<ul>
+</ul>
+</div>
+<!-- Основное меню / конец -->
+
+<!-- Меню пользователя / начало -->
+<div id="user_menu">
+<ul>
+<li><a href="mailto:mr.nerison@ya.ru">Написать письмо</a></li>
+</ul>
+</div>
+<!-- Меню пользователя / конец -->
+
+<!-- Основное содержание / начало -->
+<div id="content">
+<h1>Установка Zimbra Collaboration OSE</h1>
+<address>Последнее изменение: 05/04/2020 17:39:55</address>
+<h2>Подготовка системы</h2>
+
+<p>Предварительно следует учесть, что минимальные системные требования для работы ПО включают наличие:</p>
+
+<ol>
+<li>Процессор &mdash; Intel/AMD 2.0 GHZ+ 64-bit CPU</li>
+<li>Не менее 8GB ОЗУ</li>
+<li>10GB свободного дискового пространства для файлов ПО и логов (SATA или SCSI для производительности и RAID/Mirroring для избыточности)</li>
+<li>Дополнительное дисковое пространство для хранения почты</li>
+</ol>
+
+<p>Разработчик не рекомендует RAID-5 для установок с более чем 100 учетными записями.</p>
+
+<p>Разворачивать ПО будем на Ubuntu 18.04. В процессе установки я указал в качестве hostname имя mail.example.ru, какое соответствует имени MX-сервера для моего домена. Сразу после установки системы её следует обновить:</p>
+
+<pre> root@mail:~# apt-get update
+ root@mail:~# apt-get dist-upgrade</pre>
+
+<p>Далее, сдедуя официальной документации отключаем apparmor:</p>
+
+<pre> root@mail:~# service apparmor stop
+ root@mail:~# service apparmor teardown
+ root@mail:~# systemctl disable apparmor</pre>
+
+<p>Установите правильное время и часовой пояс:</p>
+
+<pre> root@mail:~# rm /etc/localtime
+ root@mail:~# ln -sf /usr/share/zoneinfo/Asia/Novosibirsk /etc/localtime
+ root@mail:~# ntpdate pool.ntp.org</pre>
+
+<p>Измените имя системы (если оно не соответствует правильному) и добавьте записи в /etc/hosts:</p>
+
+<pre> root@mail:~# hostnamectl set-hostname mail.example.ru</pre>
+
+<p>В процессе запуска ПО, ldap-сервер будет слушать порт на том интерфейсе, в чей ip-адрес разрешается имя сервера MTA, потому запись в файле /etc/hosts должна указывать на ip-адрес, сконфигурированный на интерфейсе сервера, будь он публичным или серым (в случае с сервером за NAT). У меня белый:</p>
+
+<pre> root@mail:~# vi /etc/hosts
+ 127.0.0.1       localhost
+ 111.222.333.444 mail.example.com
+ ~
+ ~</pre>
+
+<p>Как я и говорил, в процессе установки инсталлер попробует найти MX-запись для вашего домена и A-запись для MTA-сервера. Если вы уже купили домен и настроили правильное разрешение имен, то следующий шаг возможно пропустить, настроив сервер на использование правильного резолвера в вашей сети. Иначе, если спрашивать о нужных записях в контексте используемого имени некого, ставим dnsmasq и настраиваем сервер на использование адреса 127.0.0.1 в качестве адреса сервера имён.</p>
+
+<pre> root@mail:~# apt-get install dnsmasq
+ root@mail:~# cat /dev/null &gt; /etc/dnsmasq.conf
+ root@mail:~# vi /etc/dnsmasq.conf
+ server=8.8.8.8
+ listen-address=127.0.0.1
+ domain=example.ru
+ mx-host=example.ru,mail.example.ru,0
+ address=/mail.example.ru/111.222.333.444
+ ~
+ ~</pre>
+
+<p>Не забыть перезапустить dnsmasq после изменения файла конфигурации:</p>
+
+<pre> root@mail:~# systemctl restart dnsmasq.service</pre>
+
+<p>Отключить systemd-resolved и удалить симлинк /etc/resolv.conf:</p>
+
+<pre> root@mail:~# systemctl stop systemd-resolved.service
+ root@mail:~# systemctl disable systemd-resolved.service
+ root@mail:~# rm /etc/resolv.conf</pre>
+
+<p>Создать новый файл /etc/resolv.conf:</p>
+
+<pre> root@mail:~# echo &quot;nameserver 127.0.0.1&quot; &gt; /etc/resolv.conf</pre>
+
+<p>Проверить разрешение имён:</p>
+
+<pre> root@mail:~# host -t mx example.ru
+ example.ru mail is handled by 0 mail.example.ru.
+ root@mail:~# host -t a mail.example.ru
+ mail.test.ru has address 111.222.333.444</pre>
+
+<h2>Установка ПО</h2>
+
+<p>Начнем с того, что скачаем и распакуем дистрибутив Zimbra Collaboration OSE. Найти ссылку на актуальный файл под ваш дистрибутив можно на странице сайта <a href="https://www.zimbra.org/download/zimbra-collaboration">zimbra.org</a></p>
+
+<pre> root@mail:~# wget https://files.zimbra.com/downloads/8.8.15_GA\
+ &gt; /zcs-8.8.15_GA_3869.UBUNTU18_64.20190918004220.tgz
+ root@mail:~# tar -xvf zcs-8.8.15_GA_3869.UBUNTU18_64.20190918004220.tgz</pre>
+
+<p>Далее перейдем в каталог и выполним скрипт для запуска процесса установки:</p>
+
+<pre> root@mail:~# cd zcs-8.8.15_GA_3869.UBUNTU18_64.20190918004220
+ root@mail:~# ./install.sh</pre>
+
+<p>По минимому следует отметить для установки компоненты:</p>
+
+<ul>
+<li>zimbra-ldap</li>
+<li>zimbra-logger</li>
+<li>zimbra-mta</li>
+<li>zimbra-store</li>
+</ul>
+
+<p>В процессе установки, не отыскав нужных DNS-записей, инсталлятор попросит изменить имя почтового домена. Сделайте это, указав имя, для которого создавали MX-запись.</p>
+
+<p>Также следует установить пароль администратора для доступа к веб-интерфейсу, последовательно выбрав нужные пункты в меню конфигурации. Не нужно уведомлять Zimbra об установке копии ПО. Или нужно. Решайте сами)</p>
+
+<p>После успешной установки ПО будет запущено. Проверить это из консоли можно, выполнив команду zmcontrol status от имени пользователя zimbra:</p>
+
+<pre> root@mail:~# su - zimbra -c &quot;zmcontrol status&quot;</pre>
+
+<p>Чтобы создать учетные записи для пользователей почтового сервера слеует открыть страницу https://mail.example.ru:7071/ в вашем броузере и пройти аутентификацию, используя логин admin и ранее указанный пароль.</p>
+
+
+</div>
+<!-- Основное содержание / конец -->
+
+<!-- Копирайты / начало -->
+<div id="copyright">
+<ul>
+<li><a href="http://software.cherry-design.ru/">Простой онлайн блокнот &quot;Wikipad&quot; v2.0.1</a></li>
+<li>Design &amp; Programming &copy; 2007-2013 <a href="http://www.cherry-design.ru/">Web-studio &quot;Cherry-Design&quot;</a></li>
+</ul>
+</div>
+<!-- Копирайты / конец -->
+
+</body>
+</html>
