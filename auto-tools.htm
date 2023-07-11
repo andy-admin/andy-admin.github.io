@@ -1,0 +1,139 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>Vybornov's Blog | Подготовка сервера с инструментами автоматизации</title>
+
+<!-- Web-design (C) 1998-2013 Mike Melnikov | cherry-design@mail.ru -->
+<!-- Web-design (C) 1998-2013 Cherry-Design | http://www.cherry-design.spb.ru/ -->
+
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<meta http-equiv="сontent-language" content="ru" />
+
+<meta name="generator" content="Wikipad v2.0.1" />
+<meta name="keywords" content="Список ключевых слов" />
+<meta name="description" content="Краткое описание сайта" />
+
+<link rel="stylesheet" type="text/css" media="screen" href="css/screen.css" />
+<link rel="stylesheet" type="text/css" media="print" href="css/print.css" />
+
+
+</head>
+
+<body>
+
+<!-- Заголовок сайта / начало -->
+<div id="header">
+<h1><a href="/index.htm" style="text-decoration:none;color:black;">Vybornov's Blog</a></h1>
+<p></p>
+</div>
+<!-- Заголовок сайта / конец -->
+
+<!-- Основное меню / начало -->
+<div id="main_menu">
+<ul>
+</ul>
+</div>
+<!-- Основное меню / конец -->
+
+<!-- Меню пользователя / начало -->
+<div id="user_menu">
+<ul>
+<li><a href="mailto:mr.nerison@ya.ru">Написать письмо</a></li>
+</ul>
+</div>
+<!-- Меню пользователя / конец -->
+
+<!-- Основное содержание / начало -->
+<div id="content">
+<h1>Подготовка сервера с инструментами автоматизации</h1>
+<address>Последнее изменение: 09/06/2022 03:39:09</address>
+<p>Будем устанавливать следующие инструменты:</p>
+
+<ol>
+<li>nano</li>
+<li>Ansible и pip</li>
+<li>Скрипт Ansible-Proxmox-inventory</li>
+<li>Packer и скрипты mi-freebsd-10</li>
+<li>git</li>
+<li>bind-tools</li>
+</ol>
+
+<p>Ставим nano, он удобнее ee:</p>
+
+<pre> # pkg install -y nano</pre>
+
+<p>Ставим Ansible:</p>
+
+<pre> # pkg install -y py38-ansible py38-pip</pre>
+
+<p>Доставляем дополнительные плагины (в т.ч. для Proxmox) и пару библиотек python:</p>
+
+<pre> # ansible-galaxy collection install community.general
+ # pip install netaddr dnspython zabbix_api</pre>
+
+<p>Создаем файл конфигурации для Ansible - ~/.ansible.cfg:</p>
+
+<pre> [defaults]
+ interpreter_python = auto_silent
+ inventory = ./proxmox.py
+ remote_user = s-ansb-it</pre>
+
+<p>И добавляем необходимые переменные в .cshrc, если пользуемся csh:</p>
+
+<pre> ...
+ setenv	EDITOR	vi
+ setenv	PAGER	less
+ 
+ setenv	ANSIBLE_HOST_KEY_CHECKING	False
+ ...</pre>
+
+<p>Ставим Packer:</p>
+
+<pre> # pkg install -y packer</pre>
+
+<p>Ставим git, bind-tools и необходимые зависимости для работы скриптов mi-freebsd-10 (bash rsync cdrtools):</p>
+
+<pre> # pkg install -y bind-tools bash rsync cdrtools git</pre>
+
+<p>Клонируем репозиторий mi-freebsd-10 с GitHub себе:</p>
+
+<pre> # git clone https://github.com/joyent/mi-freebsd-10.git</pre>
+
+<p>Скачиваем также скрипт из репозитория Ansible-Proxmox-inventory и делаем его исполняемым:</p>
+
+<pre> # fetch https://github.com/xezpeleta/Ansible-Proxmox-inventory/raw/master/proxmox.py
+ # chmod ug+x proxmox.py</pre>
+
+<p>Как понятно из названия, скрипт позволяет формировать инвертори для Ansible. После загрузки первым делом меняем путь к бинарнику python, верным будет следующий:</p>
+
+<pre> #!/usr/local/bin/python3.8</pre>
+
+<p>Далее рядом создаем файл proxmox.json, где указываем реквизиты для подключения к кластеру PVE, для примера:</p>
+
+<pre> {
+     &quot;url&quot;: &quot;https://node04.pve.ufnp.local:8006/&quot;,
+     &quot;username&quot;: &quot;s-ansb-it@pve&quot;,
+     &quot;password&quot;: &quot;6OM032fkae3SctPJ&quot;,
+     &quot;validateCert&quot;: false
+ }</pre>
+
+<p>Проверяем, что срипт выполняется успешно (должны получить красивый инвентори):</p>
+
+<pre> # ./proxmox.py --list --pretty</pre>
+
+
+</div>
+<!-- Основное содержание / конец -->
+
+<!-- Копирайты / начало -->
+<div id="copyright">
+<ul>
+<li><a href="http://software.cherry-design.ru/">Простой онлайн блокнот &quot;Wikipad&quot; v2.0.1</a></li>
+<li>Design &amp; Programming &copy; 2007-2013 <a href="http://www.cherry-design.ru/">Web-studio &quot;Cherry-Design&quot;</a></li>
+</ul>
+</div>
+<!-- Копирайты / конец -->
+
+</body>
+</html>
